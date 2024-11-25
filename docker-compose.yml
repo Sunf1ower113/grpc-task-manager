@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: grpc-task-manager
+    environment:
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      GRPC_PORT: ${GRPC_PORT}
+      LOG_LEVEL: ${LOG_LEVEL}
+      LOG_FILE_PATH: ${LOG_FILE_PATH}
+      GENERATED_PATH: ${GENERATED_PATH}
+    ports:
+      - "${GRPC_PORT}:${GRPC_PORT}"
+    volumes:
+      - ./logs:/var/log
+    depends_on:
+      - db
+
+  db:
+    image: postgres:17-alpine
+    container_name: grpc-task-manager-db
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "${DB_PORT}:${DB_PORT}"
+    volumes:
+      - ./migrations:/docker-entrypoint-initdb.d
