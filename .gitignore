@@ -1,0 +1,39 @@
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+vendor/
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.iml
+*.swp
+
+# Docker
+docker-compose.override.yml
+.docker/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Build output
+bin/
+build/
+dist/
+
+# gRPC generated files
+generated/
+
+# Logs
+*.log
+
+# Temporary files
+*.bak
+*.tmp
