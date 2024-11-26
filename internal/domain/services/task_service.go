@@ -29,7 +29,6 @@ func NewTaskService(repo repository.TaskRepository, logger *zap.Logger) TaskServ
 func (s *taskService) CreateTask(task *models.Task) (*models.Task, error) {
 	s.logger.Info("Creating task", zap.String("title", task.Title))
 
-	// Example validation: Title cannot be empty
 	if task.Title == "" {
 		s.logger.Warn("Task validation failed: title is empty")
 		return nil, ErrInvalidInput("Title cannot be empty")

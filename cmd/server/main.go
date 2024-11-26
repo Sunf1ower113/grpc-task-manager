@@ -4,6 +4,7 @@ import (
 	"github.com/Sunf1ower113/grpc-task-manager/internal/composites"
 	"github.com/Sunf1ower113/grpc-task-manager/internal/config"
 	"github.com/Sunf1ower113/grpc-task-manager/pkg/client/postgres"
+	pb "github.com/Sunf1ower113/grpc-task-manager/proto"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"log"
@@ -36,27 +37,28 @@ func main() {
 	defer database.Close()
 
 	taskComposite, err := composites.NewTaskComposite(database, logger)
-
 	if err != nil {
 		logger.Fatal("Failed to initialize task composite", zap.Error(err))
 	}
 
-	start(taskComposite, appConfig, logger)
+	startGRPCServer(taskComposite, appConfig, logger)
 }
 
-func start(taskComposite *composites.TaskComposite, cfg *config.AppConfig, logger *zap.Logger) {
+func startGRPCServer(taskComposite *composites.TaskComposite, cfg *config.AppConfig, logger *zap.Logger) {
 	logger.Info("Starting the gRPC server...")
 
-	server := grpc.NewServer()
+	grpcServer := grpc.NewServer()
+
+	pb.RegisterTaskManagerServer(grpcServer, taskComposite.Handler)
+
 	address := net.JoinHostPort(cfg.GRPCHost, cfg.GRPCPort)
 	listener, err := net.Listen("tcp", address)
 	if err != nil {
-		logger.Fatal("Failed to start listener", zap.Error(err))
+		logger.Fatal("Failed to start gRPC listener", zap.Error(err))
 	}
 
 	logger.Info("gRPC server is listening", zap.String("address", address))
-
-	if err := server.Serve(listener); err != nil {
+	if err := grpcServer.Serve(listener); err != nil {
 		logger.Fatal("Failed to start gRPC server", zap.Error(err))
 	}
 }
