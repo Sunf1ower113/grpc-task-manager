@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/Sunf1ower113/grpc-task-manager/internal/adapters/db"
 	"github.com/Sunf1ower113/grpc-task-manager/internal/composites"
 	"github.com/Sunf1ower113/grpc-task-manager/internal/config"
 	"github.com/Sunf1ower113/grpc-task-manager/pkg/client/postgres"
@@ -36,8 +35,8 @@ func main() {
 	}
 	defer database.Close()
 
-	taskRepo := db.NewPostgresTaskRepository(database, logger)
-	taskComposite, err := composites.NewTaskComposite(taskRepo, logger)
+	taskComposite, err := composites.NewTaskComposite(database, logger)
+
 	if err != nil {
 		logger.Fatal("Failed to initialize task composite", zap.Error(err))
 	}
