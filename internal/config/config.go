@@ -1,46 +1,53 @@
 package config
 
 import (
-	"fmt"
-	"github.com/joho/godotenv"
+	"log"
 	"os"
+
+	"github.com/joho/godotenv"
 )
 
-type Config struct {
-	DBUser        string
-	DBPassword    string
-	DBName        string
-	DBHost        string
-	DBPort        string
-	GRPCPort      string
-	LogLevel      string
-	LogFilePath   string
-	GeneratedPath string
+type LoggerConfig struct {
+	Level       string
+	OutputPaths []string
 }
 
-var config *Config
-
-func LoadConfig() error {
-	err := godotenv.Load()
-	if err != nil {
-		return fmt.Errorf("Error loading .env file")
-	}
-
-	config = &Config{
-		DBUser:        os.Getenv("DB_USER"),
-		DBPassword:    os.Getenv("DB_PASSWORD"),
-		DBName:        os.Getenv("DB_NAME"),
-		DBHost:        os.Getenv("DB_HOST"),
-		DBPort:        os.Getenv("DB_PORT"),
-		GRPCPort:      os.Getenv("GRPC_PORT"),
-		LogLevel:      os.Getenv("LOG_LEVEL"),
-		LogFilePath:   os.Getenv("LOG_FILE_PATH"),
-		GeneratedPath: os.Getenv("GENERATED_PATH"),
-	}
-
-	return nil
+type AppConfig struct {
+	DBUser          string
+	DBPassword      string
+	DBName          string
+	DBHost          string
+	DBPort          string
+	GRPCHost        string
+	GRPCPort        string
+	Logger          *LoggerConfig
+	GeneratedPath   string
+	DebugMode       bool
+	EnableProfiling bool
 }
 
-func GetConfig() *Config {
-	return config
+func InitConfig() (*AppConfig, error) {
+	if os.Getenv("ENV_MODE") != "docker" {
+		err := godotenv.Load()
+		if err != nil {
+			log.Println("Warning: .env file not found or could not be loaded")
+		}
+	}
+
+	return &AppConfig{
+		DBUser:     os.Getenv("DB_USER"),
+		DBPassword: os.Getenv("DB_PASSWORD"),
+		DBName:     os.Getenv("DB_NAME"),
+		DBHost:     os.Getenv("DB_HOST"),
+		DBPort:     os.Getenv("DB_PORT"),
+		GRPCHost:   os.Getenv("GRPC_HOST"),
+		GRPCPort:   os.Getenv("GRPC_PORT"),
+		Logger: &LoggerConfig{
+			Level:       os.Getenv("LOG_LEVEL"),
+			OutputPaths: []string{"stdout", os.Getenv("LOG_FILE_PATH")},
+		},
+		GeneratedPath:   os.Getenv("GENERATED_PATH"),
+		DebugMode:       os.Getenv("DEBUG_MODE") == "true",
+		EnableProfiling: os.Getenv("ENABLE_PROFILING") == "true",
+	}, nil
 }
