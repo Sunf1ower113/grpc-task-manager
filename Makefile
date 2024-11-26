@@ -1,14 +1,14 @@
 APP_NAME = grpc-task-manager
-DB_SERVICE = db
-APP_SERVICE = app
 DOCKER_COMPOSE = docker-compose
+PROD_APP_SERVICE = grpc-task-manager
+PROD_DB_SERVICE = grpc-task-manager-prod-db
 
 build:
 	@echo "Building the Go application..."
 	docker build -t $(APP_NAME) .
 
 up:
-	@echo "Starting the application with Docker Compose..."
+	@echo "Starting the application in production mode..."
 	$(DOCKER_COMPOSE) up --build -d
 
 down:
@@ -17,27 +17,15 @@ down:
 
 migrate:
 	@echo "Running database migrations..."
-	$(DOCKER_COMPOSE) exec $(APP_SERVICE) go run ./migrations
+	$(DOCKER_COMPOSE) exec $(PROD_DB_SERVICE) sh -c "psql -U $$POSTGRES_USER -d $$POSTGRES_DB -f /docker-entrypoint-initdb.d/0001_create_tasks_table.sql"
 
 logs:
 	@echo "Viewing logs..."
-	$(DOCKER_COMPOSE) logs -f $(APP_SERVICE)
-
-dev:
-	@echo "Starting the application in development mode..."
-	$(DOCKER_COMPOSE) up --build
-
-prod:
-	@echo "Starting the application in production mode..."
-	$(DOCKER_COMPOSE) up --build -d
-
-test:
-	@echo "Running tests..."
-	$(DOCKER_COMPOSE) exec $(APP_SERVICE) go test ./...
+	$(DOCKER_COMPOSE) logs -f $(PROD_APP_SERVICE)
 
 clean:
 	@echo "Cleaning up Docker images and containers..."
 	$(DOCKER_COMPOSE) down --volumes --rmi all
 
-rebuild: down build up
+rebuild: clean build up
 	@echo "Rebuilding the application..."
