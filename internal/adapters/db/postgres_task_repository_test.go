@@ -95,7 +95,7 @@ func TestPostgresTaskRepository_UpdateTask(t *testing.T) {
 
 	mock.ExpectQuery("UPDATE tasks SET").
 		WithArgs(task.Title, task.Description, sqlmock.AnyArg(), task.ID).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "created_at"}).AddRow(task.ID, time.Now()))
+		WillReturnRows(sqlmock.NewRows([]string{"created_at"}).AddRow(time.Now()))
 
 	updatedTask, err := repo.UpdateTask(task)
 	assert.NoError(t, err)

@@ -8,7 +8,9 @@ import (
 	"github.com/Sunf1ower113/grpc-task-manager/pkg/client/postgres"
 	pb "github.com/Sunf1ower113/grpc-task-manager/proto"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 	"log"
 	"net"
 	"testing"
@@ -16,14 +18,14 @@ import (
 )
 
 func cleanupDatabase(db *sql.DB, t *testing.T) {
-	query := `DELETE FROM tasks`
+	query := `TRUNCATE TABLE tasks RESTART IDENTITY CASCADE;`
 	_, err := db.Exec(query)
 	if err != nil {
 		t.Fatalf("Failed to clean up database: %v", err)
 	}
 }
 
-func TestCreateTask(t *testing.T) {
+func setupTestEnvironment(t *testing.T) (pb.TaskManagerClient, func()) {
 	appConfig, err := config.InitConfig()
 	if err != nil {
 		t.Fatalf("Failed to initialize configuration: %v", err)
@@ -33,7 +35,6 @@ func TestCreateTask(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to initialize logger: %v", err)
 	}
-	defer logger.Sync()
 
 	database, err := postgres.NewDB(
 		appConfig.DBUser,
@@ -46,7 +47,6 @@ func TestCreateTask(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to initialize database: %v", err)
 	}
-	defer database.Close()
 
 	cleanupDatabase(database, t)
 
@@ -56,7 +56,6 @@ func TestCreateTask(t *testing.T) {
 	}
 
 	server := grpc.NewServer()
-	defer server.Stop()
 
 	pb.RegisterTaskManagerServer(server, taskComposite.Handler)
 
@@ -76,9 +75,22 @@ func TestCreateTask(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create gRPC client connection: %v", err)
 	}
-	defer conn.Close()
 
 	client := pb.NewTaskManagerClient(conn)
+
+	cleanup := func() {
+		conn.Close()
+		server.Stop()
+		database.Close()
+		logger.Sync()
+	}
+
+	return client, cleanup
+}
+
+func TestCreateTask(t *testing.T) {
+	client, cleanup := setupTestEnvironment(t)
+	defer cleanup()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -95,71 +107,16 @@ func TestCreateTask(t *testing.T) {
 		t.Errorf("CreateTask returned unexpected response: got %v want %v", resp.Title, "Test Task")
 	}
 	log.Printf("Task created successfully: %+v", resp)
-
-	cleanupDatabase(database, t)
 }
 
 func TestListTasks(t *testing.T) {
-	appConfig, err := config.InitConfig()
-	if err != nil {
-		t.Fatalf("Failed to initialize configuration: %v", err)
-	}
-
-	logger, err := config.InitLogger(appConfig.Logger)
-	if err != nil {
-		t.Fatalf("Failed to initialize logger: %v", err)
-	}
-	defer logger.Sync()
-
-	database, err := postgres.NewDB(
-		appConfig.DBUser,
-		appConfig.DBPassword,
-		appConfig.DBName,
-		appConfig.DBHost,
-		appConfig.DBPort,
-		logger,
-	)
-	if err != nil {
-		t.Fatalf("Failed to initialize database: %v", err)
-	}
-	defer database.Close()
-
-	cleanupDatabase(database, t)
-
-	taskComposite, err := composites.NewTaskComposite(database, logger)
-	if err != nil {
-		t.Fatalf("Failed to initialize task composite: %v", err)
-	}
-
-	server := grpc.NewServer()
-	defer server.Stop()
-
-	pb.RegisterTaskManagerServer(server, taskComposite.Handler)
-
-	address := appConfig.GRPCHost + ":" + appConfig.GRPCPort
-	go func() {
-		listener, err := net.Listen("tcp", address)
-		if err != nil {
-			t.Fatalf("Failed to start gRPC listener: %v", err)
-		}
-		if err := server.Serve(listener); err != nil {
-			t.Fatalf("Failed to serve gRPC server: %v", err)
-		}
-	}()
-	time.Sleep(2 * time.Second)
-
-	conn, err := grpc.NewClient(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		t.Fatalf("Failed to create gRPC client connection: %v", err)
-	}
-	defer conn.Close()
-
-	client := pb.NewTaskManagerClient(conn)
+	client, cleanup := setupTestEnvironment(t)
+	defer cleanup()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	_, err = client.CreateTask(ctx, &pb.CreateTaskRequest{
+	_, err := client.CreateTask(ctx, &pb.CreateTaskRequest{
 		Title:       "Task 1",
 		Description: "First test task",
 	})
@@ -191,66 +148,11 @@ func TestListTasks(t *testing.T) {
 	}
 
 	log.Printf("Tasks listed successfully: %+v", resp.Tasks)
-
-	cleanupDatabase(database, t)
 }
 
 func TestGetTask(t *testing.T) {
-	appConfig, err := config.InitConfig()
-	if err != nil {
-		t.Fatalf("Failed to initialize configuration: %v", err)
-	}
-
-	logger, err := config.InitLogger(appConfig.Logger)
-	if err != nil {
-		t.Fatalf("Failed to initialize logger: %v", err)
-	}
-	defer logger.Sync()
-
-	database, err := postgres.NewDB(
-		appConfig.DBUser,
-		appConfig.DBPassword,
-		appConfig.DBName,
-		appConfig.DBHost,
-		appConfig.DBPort,
-		logger,
-	)
-	if err != nil {
-		t.Fatalf("Failed to initialize database: %v", err)
-	}
-	defer database.Close()
-
-	cleanupDatabase(database, t)
-
-	taskComposite, err := composites.NewTaskComposite(database, logger)
-	if err != nil {
-		t.Fatalf("Failed to initialize task composite: %v", err)
-	}
-
-	server := grpc.NewServer()
-	defer server.Stop()
-
-	pb.RegisterTaskManagerServer(server, taskComposite.Handler)
-
-	address := appConfig.GRPCHost + ":" + appConfig.GRPCPort
-	go func() {
-		listener, err := net.Listen("tcp", address)
-		if err != nil {
-			t.Fatalf("Failed to start gRPC listener: %v", err)
-		}
-		if err := server.Serve(listener); err != nil {
-			t.Fatalf("Failed to serve gRPC server: %v", err)
-		}
-	}()
-	time.Sleep(2 * time.Second)
-
-	conn, err := grpc.NewClient(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		t.Fatalf("Failed to create gRPC client connection: %v", err)
-	}
-	defer conn.Close()
-
-	client := pb.NewTaskManagerClient(conn)
+	client, cleanup := setupTestEnvironment(t)
+	defer cleanup()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -273,66 +175,11 @@ func TestGetTask(t *testing.T) {
 	if getResp.Id != createResp.Id || getResp.Title != "Task to Get" || getResp.Description != "Task description" {
 		t.Errorf("Expected task data to match, got %+v", getResp)
 	}
-
-	cleanupDatabase(database, t)
 }
 
 func TestUpdateTask(t *testing.T) {
-	appConfig, err := config.InitConfig()
-	if err != nil {
-		t.Fatalf("Failed to initialize configuration: %v", err)
-	}
-
-	logger, err := config.InitLogger(appConfig.Logger)
-	if err != nil {
-		t.Fatalf("Failed to initialize logger: %v", err)
-	}
-	defer logger.Sync()
-
-	database, err := postgres.NewDB(
-		appConfig.DBUser,
-		appConfig.DBPassword,
-		appConfig.DBName,
-		appConfig.DBHost,
-		appConfig.DBPort,
-		logger,
-	)
-	if err != nil {
-		t.Fatalf("Failed to initialize database: %v", err)
-	}
-	defer database.Close()
-
-	cleanupDatabase(database, t)
-
-	taskComposite, err := composites.NewTaskComposite(database, logger)
-	if err != nil {
-		t.Fatalf("Failed to initialize task composite: %v", err)
-	}
-
-	server := grpc.NewServer()
-	defer server.Stop()
-
-	pb.RegisterTaskManagerServer(server, taskComposite.Handler)
-
-	address := appConfig.GRPCHost + ":" + appConfig.GRPCPort
-	go func() {
-		listener, err := net.Listen("tcp", address)
-		if err != nil {
-			t.Fatalf("Failed to start gRPC listener: %v", err)
-		}
-		if err := server.Serve(listener); err != nil {
-			t.Fatalf("Failed to serve gRPC server: %v", err)
-		}
-	}()
-	time.Sleep(2 * time.Second)
-
-	conn, err := grpc.NewClient(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		t.Fatalf("Failed to create gRPC client connection: %v", err)
-	}
-	defer conn.Close()
-
-	client := pb.NewTaskManagerClient(conn)
+	client, cleanup := setupTestEnvironment(t)
+	defer cleanup()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -357,6 +204,72 @@ func TestUpdateTask(t *testing.T) {
 	if updateResp.Title != "Updated Title" || updateResp.Description != "Updated Description" {
 		t.Errorf("Task was not updated correctly: %+v", updateResp)
 	}
+}
 
-	cleanupDatabase(database, t)
+func TestCreateTask_EmptyTitle(t *testing.T) {
+	client, cleanup := setupTestEnvironment(t)
+	defer cleanup()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	_, err := client.CreateTask(ctx, &pb.CreateTaskRequest{
+		Title:       "",
+		Description: "This task has an empty title",
+	})
+	if err == nil {
+		t.Fatalf("Expected error, got nil")
+	}
+
+	if status.Code(err) != codes.InvalidArgument {
+		t.Errorf("Expected InvalidArgument error, got %v", err)
+	}
+}
+
+func TestGetTask_NonexistentID(t *testing.T) {
+	client, cleanup := setupTestEnvironment(t)
+	defer cleanup()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	_, err := client.GetTask(ctx, &pb.GetTaskRequest{
+		Id: 9999,
+	})
+	if err == nil {
+		t.Fatalf("Expected error, got nil")
+	}
+
+	if status.Code(err) != codes.NotFound {
+		t.Errorf("Expected NotFound error, got %v", err)
+	}
+}
+
+func TestUpdateTask_EmptyDescription(t *testing.T) {
+	client, cleanup := setupTestEnvironment(t)
+	defer cleanup()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	createResp, err := client.CreateTask(ctx, &pb.CreateTaskRequest{
+		Title:       "Task for Update",
+		Description: "Original description",
+	})
+	if err != nil {
+		t.Fatalf("Failed to create task: %v", err)
+	}
+
+	_, err = client.UpdateTask(ctx, &pb.UpdateTaskRequest{
+		Id:          createResp.Id,
+		Title:       "Updated Title",
+		Description: "",
+	})
+	if err == nil {
+		t.Fatalf("Expected error, got nil")
+	}
+
+	if status.Code(err) != codes.InvalidArgument {
+		t.Errorf("Expected InvalidArgument error, got %v", err)
+	}
 }

@@ -4,6 +4,14 @@ package taskmanager;
 
 option go_package = "github.com/Sunf1ower113/grpc-task-manager/proto;proto";
 
+service TaskManager {
+  rpc CreateTask(CreateTaskRequest) returns (TaskResponse);
+  rpc ListTasks(ListTasksRequest) returns (ListTasksResponse);
+  rpc GetTask(GetTaskRequest) returns (TaskResponse);
+  rpc UpdateTask(UpdateTaskRequest) returns (TaskResponse);
+  rpc DeleteTask(DeleteTaskRequest) returns (DeleteTaskResponse);
+}
+
 message Task {
   int64 id = 1;
   string title = 2;
@@ -49,10 +57,3 @@ message DeleteTaskResponse {
   bool success = 1;
 }
 
-service TaskManager {
-  rpc CreateTask(CreateTaskRequest) returns (TaskResponse);
-  rpc ListTasks(ListTasksRequest) returns (ListTasksResponse);
-  rpc GetTask(GetTaskRequest) returns (TaskResponse);
-  rpc UpdateTask(UpdateTaskRequest) returns (TaskResponse);
-  rpc DeleteTask(DeleteTaskRequest) returns (DeleteTaskResponse);
-}

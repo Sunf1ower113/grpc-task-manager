@@ -2,6 +2,7 @@ APP_NAME = grpc-task-manager
 DOCKER_COMPOSE = docker-compose
 PROD_APP_SERVICE = grpc-task-manager
 PROD_DB_SERVICE = grpc-task-manager-prod-db
+PROFILE = default
 
 build:
 	@echo "Building the Go application..."
@@ -9,23 +10,20 @@ build:
 
 up:
 	@echo "Starting the application in production mode..."
-	$(DOCKER_COMPOSE) up --build -d
-
-down:
-	@echo "Stopping the application..."
-	$(DOCKER_COMPOSE) down
-
-migrate:
-	@echo "Running database migrations..."
-	$(DOCKER_COMPOSE) exec $(PROD_DB_SERVICE) sh -c "psql -U $$POSTGRES_USER -d $$POSTGRES_DB -f /docker-entrypoint-initdb.d/0001_create_tasks_table.sql"
-
-logs:
-	@echo "Viewing logs..."
-	$(DOCKER_COMPOSE) logs -f $(PROD_APP_SERVICE)
+	$(DOCKER_COMPOSE) --profile $(PROFILE) up --build -d
 
 clean:
 	@echo "Cleaning up Docker images and containers..."
-	$(DOCKER_COMPOSE) down --volumes --rmi all
+	$(DOCKER_COMPOSE) --profile $(PROFILE) down --volumes --rmi all
+
+logs:
+	@echo "Viewing logs..."
+	$(DOCKER_COMPOSE) --profile $(PROFILE) logs -f $(PROD_APP_SERVICE)
 
 rebuild: clean build up
 	@echo "Rebuilding the application..."
+
+generate-protobuf:
+	@echo "Generating Protobuf files locally..."
+	protoc --go_out=./proto --go-grpc_out=./proto \
+		--go_opt=paths=source_relative --go-grpc_opt=paths=source_relative proto/task.proto

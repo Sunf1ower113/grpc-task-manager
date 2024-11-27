@@ -2,240 +2,173 @@ package grpc
 
 import (
 	"context"
-	"github.com/Sunf1ower113/grpc-task-manager/internal/domain/services"
-	"github.com/Sunf1ower113/grpc-task-manager/proto"
-	"go.uber.org/zap"
-	"reflect"
 	"testing"
+
+	"github.com/Sunf1ower113/grpc-task-manager/internal/domain/models"
+	pb "github.com/Sunf1ower113/grpc-task-manager/proto"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
-func TestErrTaskNotFound(t *testing.T) {
-	type args struct {
-		message string
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := ErrTaskNotFound(tt.args.message); (err != nil) != tt.wantErr {
-				t.Errorf("ErrTaskNotFound() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
+type MockService struct {
+	mock.Mock
 }
 
-func TestNewTaskHandler(t *testing.T) {
-	type args struct {
-		service services.TaskService
-		logger  *zap.Logger
+func (m *MockService) CreateTask(task *models.Task) (*models.Task, error) {
+	args := m.Called(task)
+	return args.Get(0).(*models.Task), args.Error(1)
+}
+
+func (m *MockService) ListTasks() ([]*models.Task, error) {
+	args := m.Called()
+	return args.Get(0).([]*models.Task), args.Error(1)
+}
+
+func (m *MockService) GetTask(id int64) (*models.Task, error) {
+	args := m.Called(id)
+	return args.Get(0).(*models.Task), args.Error(1)
+}
+
+func (m *MockService) UpdateTask(task *models.Task) (*models.Task, error) {
+	args := m.Called(task)
+	return args.Get(0).(*models.Task), args.Error(1)
+}
+
+func (m *MockService) DeleteTask(id int64) error {
+	args := m.Called(id)
+	return args.Error(0)
+}
+
+func setupHandler() (*MockService, *TaskHandler) {
+	mockService := new(MockService)
+	logger, _ := zap.NewDevelopment()
+	handler := &TaskHandler{
+		service: mockService,
+		logger:  logger,
 	}
-	tests := []struct {
-		name string
-		args args
-		want proto.TaskManagerServer
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := NewTaskHandler(tt.args.service, tt.args.logger); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewTaskHandler() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+	return mockService, handler
 }
 
 func TestTaskHandler_CreateTask(t *testing.T) {
-	type fields struct {
-		UnimplementedTaskManagerServer proto.UnimplementedTaskManagerServer
-		service                        services.TaskService
-		logger                         *zap.Logger
-	}
-	type args struct {
-		ctx context.Context
-		req *pb.CreateTaskRequest
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    *pb.TaskResponse
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			h := &TaskHandler{
-				UnimplementedTaskManagerServer: tt.fields.UnimplementedTaskManagerServer,
-				service:                        tt.fields.service,
-				logger:                         tt.fields.logger,
-			}
-			got, err := h.CreateTask(tt.args.ctx, tt.args.req)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("CreateTask() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("CreateTask() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
+	mockService, handler := setupHandler()
 
-func TestTaskHandler_DeleteTask(t *testing.T) {
-	type fields struct {
-		UnimplementedTaskManagerServer proto.UnimplementedTaskManagerServer
-		service                        services.TaskService
-		logger                         *zap.Logger
+	mockTask := &models.Task{
+		Title:       "Test Task",
+		Description: "Description for test task",
 	}
-	type args struct {
-		ctx context.Context
-		req *pb.DeleteTaskRequest
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    *pb.DeleteTaskResponse
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			h := &TaskHandler{
-				UnimplementedTaskManagerServer: tt.fields.UnimplementedTaskManagerServer,
-				service:                        tt.fields.service,
-				logger:                         tt.fields.logger,
-			}
-			got, err := h.DeleteTask(tt.args.ctx, tt.args.req)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("DeleteTask() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("DeleteTask() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
 
-func TestTaskHandler_GetTask(t *testing.T) {
-	type fields struct {
-		UnimplementedTaskManagerServer proto.UnimplementedTaskManagerServer
-		service                        services.TaskService
-		logger                         *zap.Logger
+	mockResponse := &models.Task{
+		ID:          1,
+		Title:       "Test Task",
+		Description: "Description for test task",
 	}
-	type args struct {
-		ctx context.Context
-		req *pb.GetTaskRequest
+
+	mockService.On("CreateTask", mockTask).Return(mockResponse, nil)
+
+	req := &pb.CreateTaskRequest{
+		Title:       "Test Task",
+		Description: "Description for test task",
 	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    *pb.TaskResponse
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			h := &TaskHandler{
-				UnimplementedTaskManagerServer: tt.fields.UnimplementedTaskManagerServer,
-				service:                        tt.fields.service,
-				logger:                         tt.fields.logger,
-			}
-			got, err := h.GetTask(tt.args.ctx, tt.args.req)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GetTask() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetTask() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
+
+	resp, err := handler.CreateTask(context.Background(), req)
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	require.Equal(t, int64(1), resp.Id)
+	require.Equal(t, "Test Task", resp.Title)
+
+	mockService.AssertExpectations(t)
 }
 
 func TestTaskHandler_ListTasks(t *testing.T) {
-	type fields struct {
-		UnimplementedTaskManagerServer proto.UnimplementedTaskManagerServer
-		service                        services.TaskService
-		logger                         *zap.Logger
+	mockService, handler := setupHandler()
+
+	mockTasks := []*models.Task{
+		{
+			ID:          1,
+			Title:       "Task 1",
+			Description: "Description 1",
+		},
+		{
+			ID:          2,
+			Title:       "Task 2",
+			Description: "Description 2",
+		},
 	}
-	type args struct {
-		ctx context.Context
-		req *pb.ListTasksRequest
+
+	mockService.On("ListTasks").Return(mockTasks, nil)
+
+	req := &pb.ListTasksRequest{}
+
+	resp, err := handler.ListTasks(context.Background(), req)
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	require.Len(t, resp.Tasks, 2)
+	require.Equal(t, int64(1), resp.Tasks[0].Id)
+	require.Equal(t, "Task 1", resp.Tasks[0].Title)
+
+	mockService.AssertExpectations(t)
+}
+
+func TestTaskHandler_GetTask(t *testing.T) {
+	mockService, handler := setupHandler()
+
+	mockTask := &models.Task{
+		ID:          1,
+		Title:       "Test Task",
+		Description: "Test Description",
 	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    *pb.ListTasksResponse
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			h := &TaskHandler{
-				UnimplementedTaskManagerServer: tt.fields.UnimplementedTaskManagerServer,
-				service:                        tt.fields.service,
-				logger:                         tt.fields.logger,
-			}
-			got, err := h.ListTasks(tt.args.ctx, tt.args.req)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ListTasks() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ListTasks() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
+
+	mockService.On("GetTask", int64(1)).Return(mockTask, nil)
+
+	req := &pb.GetTaskRequest{Id: 1}
+
+	resp, err := handler.GetTask(context.Background(), req)
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	require.Equal(t, int64(1), resp.Id)
+	require.Equal(t, "Test Task", resp.Title)
+
+	mockService.AssertExpectations(t)
 }
 
 func TestTaskHandler_UpdateTask(t *testing.T) {
-	type fields struct {
-		UnimplementedTaskManagerServer proto.UnimplementedTaskManagerServer
-		service                        services.TaskService
-		logger                         *zap.Logger
+	mockService, handler := setupHandler()
+
+	mockTask := &models.Task{
+		ID:          1,
+		Title:       "Updated Task",
+		Description: "Updated Description",
 	}
-	type args struct {
-		ctx context.Context
-		req *pb.UpdateTaskRequest
+
+	mockService.On("UpdateTask", mockTask).Return(mockTask, nil)
+
+	req := &pb.UpdateTaskRequest{
+		Id:          1,
+		Title:       "Updated Task",
+		Description: "Updated Description",
 	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    *pb.TaskResponse
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			h := &TaskHandler{
-				UnimplementedTaskManagerServer: tt.fields.UnimplementedTaskManagerServer,
-				service:                        tt.fields.service,
-				logger:                         tt.fields.logger,
-			}
-			got, err := h.UpdateTask(tt.args.ctx, tt.args.req)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("UpdateTask() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("UpdateTask() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
+
+	resp, err := handler.UpdateTask(context.Background(), req)
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	require.Equal(t, int64(1), resp.Id)
+	require.Equal(t, "Updated Task", resp.Title)
+
+	mockService.AssertExpectations(t)
+}
+
+func TestTaskHandler_DeleteTask(t *testing.T) {
+	mockService, handler := setupHandler()
+
+	mockService.On("DeleteTask", int64(1)).Return(nil)
+
+	req := &pb.DeleteTaskRequest{Id: 1}
+
+	resp, err := handler.DeleteTask(context.Background(), req)
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	require.True(t, resp.Success)
+
+	mockService.AssertExpectations(t)
 }

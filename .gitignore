@@ -26,9 +26,6 @@ bin/
 build/
 dist/
 
-# gRPC generated files
-generated/
-
 # Logs
 *.log
 

@@ -7,6 +7,7 @@ import (
 	pb "github.com/Sunf1ower113/grpc-task-manager/proto"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 	"log"
 	"net"
 )
@@ -50,6 +51,8 @@ func startGRPCServer(taskComposite *composites.TaskComposite, cfg *config.AppCon
 	grpcServer := grpc.NewServer()
 
 	pb.RegisterTaskManagerServer(grpcServer, taskComposite.Handler)
+
+	reflection.Register(grpcServer)
 
 	address := net.JoinHostPort(cfg.GRPCHost, cfg.GRPCPort)
 	listener, err := net.Listen("tcp", address)

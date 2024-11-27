@@ -7,7 +7,7 @@ services:
     environment:
       - ENV_MODE=docker
     env_file:
-      - .env.docker
+      - .env.prod
     ports:
       - "${GRPC_PORT}:${GRPC_PORT}"
     volumes:
