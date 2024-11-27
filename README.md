@@ -6,12 +6,24 @@ Task Manager is a gRPC-based application for managing tasks. It supports operati
 
 ## Project Structure
 
-- **cmd**: Entry point for starting the server.
-- **internal**: Application logic including adapters, services, and repositories.
-- **proto**: gRPC service definitions.
-- **Dockerfile**: Defines the Docker image for the service.
-- **docker-compose.yml**: Multi-service Docker configuration.
-- **Makefile**: Build and deployment commands.
+This project follows the principles of Clean Architecture to ensure maintainability and scalability.
+
+- **cmd**: Entry point for starting the application, including the gRPC server.
+- **internal**: Contains the core application logic, divided into multiple layers:
+   - **adapters**: Adapters for infrastructure-level integrations such as gRPC handlers and database repositories.
+      - **grpc**: gRPC handlers for interacting with the application logic.
+      - **db**: Database repository implementations (e.g., PostgreSQL).
+   - **composites**: Dependency injection and composition of services, repositories, and handlers.
+   - **config**: Configuration loading and initialization.
+   - **domain**: Core business logic and domain models.
+      - **models**: Business entities such as `Task`.
+      - **services**: Core business logic operations implemented as services.
+      - **repository**: Interfaces defining the contracts for database operations.
+- **proto**: Contains gRPC service definitions (`.proto` files) and generated code.
+- **pkg**: Common utilities and helpers (e.g., database clients).
+- **Dockerfile**: Defines the Docker image for the application.
+- **docker-compose.yml**: Configuration for running the application and dependent services like PostgreSQL in containers.
+- **Makefile**: Build, deployment, and utility commands for automation.
 
 ---
 
