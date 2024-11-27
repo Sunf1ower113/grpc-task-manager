@@ -29,28 +29,7 @@ This project follows the principles of Clean Architecture to ensure maintainabil
 
 ## Running the Project
 
-### 1. Running Locally
-
-#### Prerequisites
-- Install `Go` (minimum version 1.22).
-- Install `PostgreSQL` and ensure it is running.
-- Install `protoc` for generating gRPC files.
-
-#### Steps
-1. configure the necessary environment variables in `.env`.
-2. Generate gRPC protobuf files:  
-   ```
-   protoc --go_out=./proto --go-grpc_out=./proto --go_opt=paths=source_relative --go-grpc_opt=paths=source_relative proto/task.proto
-   ```
-3. Run tests:
-   ```
-   go test ./... -v
-   ```
-4. Run the application:  
-   ```
-   go run ./cmd/server/main.go
-   ```
-### 2. Running with Makefile
+### 1. Running with Makefile
 
 #### Prerequisites
 - Install `Make`.
@@ -78,7 +57,7 @@ This project follows the principles of Clean Architecture to ensure maintainabil
    make generate-protobuf
    ```
 
-### 3. Running with Docker (without Makefile)
+### 2. Running with Docker (without Makefile)
 
 #### Prerequisites
 - Install `Docker`.
@@ -100,6 +79,7 @@ This project follows the principles of Clean Architecture to ensure maintainabil
    docker-compose down --volumes --rmi all
    ```
 
+
 ### Example gRPC Tests with `grpcurl`
 
 #### Prerequisites
@@ -108,39 +88,74 @@ This project follows the principles of Clean Architecture to ensure maintainabil
 
 #### Tests
 
-1. **CreateTask (Valid Request)**  
+1. **CreateTask (Valid Request)**
    ```
    docker run --rm --network="host" fullstorydev/grpcurl -plaintext -d "{"title":"Valid Task","description":"A proper description"}" localhost:50051 taskmanager.TaskManager/CreateTask
    ```
-2. **CreateTask (Invalid Request - Empty Title)**  
+2. **CreateTask (Invalid Request - Empty Title)**
    ```
    docker run --rm --network="host" fullstorydev/grpcurl -plaintext -d "{"title":"","description":"Description without title"}" localhost:50051 taskmanager.TaskManager/CreateTask 
    ```
-3. **ListTasks**  
+3. **ListTasks**
    ```
    docker run --rm --network="host" fullstorydev/grpcurl -plaintext -d "{}" localhost:50051 taskmanager.TaskManager/ListTasks
    ```
-4. **GetTask (Valid Request)**  
+4. **GetTask (Valid Request)**
    ```
    docker run --rm --network="host" fullstorydev/grpcurl -plaintext -d "{"id":1}" localhost:50051 taskmanager.TaskManager/GetTask
    ```
-5. **GetTask (Invalid Request - Nonexistent ID)**  
+5. **GetTask (Invalid Request - Nonexistent ID)**
    ```
    docker run --rm --network="host" fullstorydev/grpcurl -plaintext -d "{"id":9999}" localhost:50051 taskmanager.TaskManager/GetTask
    ```
-6. **UpdateTask (Valid Request)**  
+6. **UpdateTask (Valid Request)**
    ```
    docker run --rm --network="host" fullstorydev/grpcurl -plaintext -d "{"id":1,"title":"Updated Task","description":"Updated description"}" localhost:50051 taskmanager.TaskManager/UpdateTask
    ```
-7. **UpdateTask (Invalid Request - Empty Title and Description)**  
+7. **UpdateTask (Invalid Request - Empty Title and Description)**
    ```
    docker run --rm --network="host" fullstorydev/grpcurl -plaintext -d "{"id":1,"title":"","description":""}" localhost:50051 taskmanager.TaskManager/UpdateTask
    ```
-8. **DeleteTask (Valid Request)**  
+8. **DeleteTask (Valid Request)**
    ```
    docker run --rm --network="host" fullstorydev/grpcurl -plaintext -d "{"id":1}" localhost:50051 taskmanager.TaskManager/DeleteTask
    ```
-9. **DeleteTask (Invalid Request - Nonexistent ID)**  
+9. **DeleteTask (Invalid Request - Nonexistent ID)**
    ```
    docker run --rm --network="host" fullstorydev/grpcurl -plaintext -d "{"id":9999}" localhost:50051 taskmanager.TaskManager/DeleteTask
    ```
+
+### 3. Running Locally
+
+#### Prerequisites
+- Install `Go` (minimum version 1.22).
+- Install `PostgreSQL` and ensure it is running.
+- Install `protoc` for generating gRPC files.
+- Install `protobuf`
+- Install `grpc`
+- Install `grpc-gateway`
+
+#### Steps
+1. configure the necessary environment variables in `.env`.
+2. download google and openapi annotations
+   ```
+   mkdir -p proto/google/api proto/protoc-gen-openapiv2/options && \
+    curl -o proto/google/api/annotations.proto https://raw.githubusercontent.com/googleapis/googleapis/master/google/api/annotations.proto && \
+    curl -o proto/google/api/http.proto https://raw.githubusercontent.com/googleapis/googleapis/master/google/api/http.proto && \
+    curl -o proto/protoc-gen-openapiv2/options/annotations.proto https://raw.githubusercontent.com/grpc-ecosystem/grpc-gateway/main/protoc-gen-openapiv2/options/annotations.proto && \
+    curl -o proto/protoc-gen-openapiv2/options/openapiv2.proto https://raw.githubusercontent.com/grpc-ecosystem/grpc-gateway/main/protoc-gen-openapiv2/options/openapiv2.proto
+   ```
+3. Generate gRPC protobuf files:
+   ```
+   protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative --grpc-gateway_out=paths=source_relative:. --openapiv2_out=./docs -I . -I ./proto proto/task.proto   
+   ```
+4. Run tests:
+   ```
+   go test ./... -v
+   ```
+5. Run the application:
+   ```
+   go run ./cmd/server/main.go
+   ```
+
+
