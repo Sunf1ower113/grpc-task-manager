@@ -32,3 +32,8 @@ dist/
 # Temporary files
 *.bak
 *.tmp
+/proto/protoc-gen-openapiv2/
+/proto/google/
+/proto/task.pb.gw.go
+/proto/task_grpc.pb.go
+/proto/task.pb.go

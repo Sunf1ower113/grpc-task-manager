@@ -4,20 +4,44 @@ package taskmanager;
 
 option go_package = "github.com/Sunf1ower113/grpc-task-manager/proto;proto";
 
-service TaskManager {
-  rpc CreateTask(CreateTaskRequest) returns (TaskResponse);
-  rpc ListTasks(ListTasksRequest) returns (ListTasksResponse);
-  rpc GetTask(GetTaskRequest) returns (TaskResponse);
-  rpc UpdateTask(UpdateTaskRequest) returns (TaskResponse);
-  rpc DeleteTask(DeleteTaskRequest) returns (DeleteTaskResponse);
-}
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 
-message Task {
-  int64 id = 1;
-  string title = 2;
-  string description = 3;
-  string created_at = 4;
-  string updated_at = 5;
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "Task Manager API";
+    version: "1.0";
+  };
+};
+
+service TaskManager {
+  rpc CreateTask(CreateTaskRequest) returns (TaskResponse) {
+    option (google.api.http) = {
+      post: "/v1/tasks"
+      body: "*"
+    };
+  }
+  rpc ListTasks(ListTasksRequest) returns (ListTasksResponse) {
+    option (google.api.http) = {
+      get: "/v1/tasks"
+    };
+  }
+  rpc GetTask(GetTaskRequest) returns (TaskResponse) {
+    option (google.api.http) = {
+      get: "/v1/tasks/{id}"
+    };
+  }
+  rpc UpdateTask(UpdateTaskRequest) returns (TaskResponse) {
+    option (google.api.http) = {
+      put: "/v1/tasks/{id}"
+      body: "*"
+    };
+  }
+  rpc DeleteTask(DeleteTaskRequest) returns (DeleteTaskResponse) {
+    option (google.api.http) = {
+      delete: "/v1/tasks/{id}"
+    };
+  }
 }
 
 message CreateTaskRequest {
@@ -56,4 +80,3 @@ message DeleteTaskRequest {
 message DeleteTaskResponse {
   bool success = 1;
 }
-
