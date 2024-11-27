@@ -1,0 +1,41 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: grpc-task-manager
+    environment:
+      - ENV_MODE=docker
+    env_file:
+      - .env.prod
+    ports:
+      - "${GRPC_PORT}:${GRPC_PORT}"
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      prod_db:
+        condition: service_healthy
+    restart: always
+    profiles:
+      - default
+
+  prod_db:
+    image: postgres:17-alpine
+    container_name: grpc-task-manager-prod-db
+    environment:
+      POSTGRES_USER: prod_user
+      POSTGRES_PASSWORD: prod_password
+      POSTGRES_DB: prod_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - ./migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "prod_user", "-d", "prod_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: ["postgres"]
+    restart: always
+    profiles:
+      - default

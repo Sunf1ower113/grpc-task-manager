@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package taskmanager;
+
+option go_package = "github.com/Sunf1ower113/grpc-task-manager/proto;proto";
+
+service TaskManager {
+  rpc CreateTask(CreateTaskRequest) returns (TaskResponse);
+  rpc ListTasks(ListTasksRequest) returns (ListTasksResponse);
+  rpc GetTask(GetTaskRequest) returns (TaskResponse);
+  rpc UpdateTask(UpdateTaskRequest) returns (TaskResponse);
+  rpc DeleteTask(DeleteTaskRequest) returns (DeleteTaskResponse);
+}
+
+message Task {
+  int64 id = 1;
+  string title = 2;
+  string description = 3;
+  string created_at = 4;
+  string updated_at = 5;
+}
+
+message CreateTaskRequest {
+  string title = 1;
+  string description = 2;
+}
+
+message TaskResponse {
+  int64 id = 1;
+  string title = 2;
+  string description = 3;
+  string created_at = 4;
+  string updated_at = 5;
+}
+
+message ListTasksRequest {}
+
+message ListTasksResponse {
+  repeated TaskResponse tasks = 1;
+}
+
+message GetTaskRequest {
+  int64 id = 1;
+}
+
+message UpdateTaskRequest {
+  int64 id = 1;
+  string title = 2;
+  string description = 3;
+}
+
+message DeleteTaskRequest {
+  int64 id = 1;
+}
+
+message DeleteTaskResponse {
+  bool success = 1;
+}
+

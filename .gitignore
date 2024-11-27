@@ -19,17 +19,12 @@ docker-compose.override.yml
 .docker/
 
 # Environment files
-.env
-.env.local
-.env.*.local
+.env.prod
 
 # Build output
 bin/
 build/
 dist/
-
-# gRPC generated files
-generated/
 
 # Logs
 *.log
