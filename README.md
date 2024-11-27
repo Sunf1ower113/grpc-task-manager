@@ -52,10 +52,6 @@ This project follows the principles of Clean Architecture to ensure maintainabil
    ```
    make rebuild
    ```
-6. Generate gRPC protobuf files:  
-   ```
-   make generate-protobuf
-   ```
 
 ### 2. Running with Docker (without Makefile)
 

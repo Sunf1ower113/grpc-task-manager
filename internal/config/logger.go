@@ -5,6 +5,8 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+// InitLogger initializes and returns a Zap logger based on the provided configuration.
+// It sets the log level, output paths, and log format.
 func InitLogger(cfg *LoggerConfig) (*zap.Logger, error) {
 	lvl, err := zap.ParseAtomicLevel(cfg.Level)
 	if err != nil {

@@ -22,8 +22,3 @@ logs:
 
 rebuild: clean build up
 	@echo "Rebuilding the application..."
-
-generate-protobuf:
-	@echo "Generating Protobuf files locally..."
-	protoc --go_out=./proto --go-grpc_out=./proto \
-		--go_opt=paths=source_relative --go-grpc_opt=paths=source_relative proto/task.proto
