@@ -8,9 +8,11 @@ import (
 
 	"go.uber.org/zap"
 
-	_ "github.com/lib/pq"
+	_ "github.com/lib/pq" // PostgreSQL driver
 )
 
+// ConnectDB attempts to establish a connection to the PostgreSQL database.
+// It retries up to 5 times with a 5-second interval between retries in case of failures.
 func ConnectDB(dsn string) (*sql.DB, error) {
 	var db *sql.DB
 	var err error
@@ -32,6 +34,8 @@ func ConnectDB(dsn string) (*sql.DB, error) {
 	return nil, fmt.Errorf("failed to connect to database after 5 attempts: %w", err)
 }
 
+// NewDB initializes a new PostgreSQL database connection with the given parameters.
+// It also ensures the necessary tables are created.
 func NewDB(user, password, dbName, host, port string, logger *zap.Logger) (*sql.DB, error) {
 	connStr := fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%s sslmode=disable",
 		user, password, dbName, host, port)
@@ -51,6 +55,7 @@ func NewDB(user, password, dbName, host, port string, logger *zap.Logger) (*sql.
 	return db, nil
 }
 
+// createTables ensures the required tables exist in the database.
 func createTables(db *sql.DB, logger *zap.Logger) error {
 	var queries []string
 

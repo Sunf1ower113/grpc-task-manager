@@ -11,12 +11,14 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// TaskHandler implements the gRPC TaskManagerServer interface and handles all task-related gRPC requests.
 type TaskHandler struct {
 	pb.UnimplementedTaskManagerServer
 	service services.TaskService
 	logger  *zap.Logger
 }
 
+// NewTaskHandler initializes a new TaskHandler instance.
 func NewTaskHandler(service services.TaskService, logger *zap.Logger) pb.TaskManagerServer {
 	return &TaskHandler{
 		service: service,
@@ -24,6 +26,7 @@ func NewTaskHandler(service services.TaskService, logger *zap.Logger) pb.TaskMan
 	}
 }
 
+// CreateTask handles the gRPC request to create a new task.
 func (h *TaskHandler) CreateTask(ctx context.Context, req *pb.CreateTaskRequest) (*pb.TaskResponse, error) {
 	h.logger.Info("Received CreateTask request", zap.String("title", req.Title))
 
@@ -52,6 +55,7 @@ func (h *TaskHandler) CreateTask(ctx context.Context, req *pb.CreateTaskRequest)
 	}, nil
 }
 
+// ListTasks handles the gRPC request to list all tasks.
 func (h *TaskHandler) ListTasks(ctx context.Context, req *pb.ListTasksRequest) (*pb.ListTasksResponse, error) {
 	h.logger.Info("Received ListTasks request")
 
@@ -75,6 +79,7 @@ func (h *TaskHandler) ListTasks(ctx context.Context, req *pb.ListTasksRequest) (
 	return &pb.ListTasksResponse{Tasks: taskResponses}, nil
 }
 
+// GetTask handles the gRPC request to retrieve a specific task by its ID.
 func (h *TaskHandler) GetTask(ctx context.Context, req *pb.GetTaskRequest) (*pb.TaskResponse, error) {
 	h.logger.Info("Received GetTask request", zap.Int64("id", req.Id))
 
@@ -102,6 +107,7 @@ func (h *TaskHandler) GetTask(ctx context.Context, req *pb.GetTaskRequest) (*pb.
 	}, nil
 }
 
+// UpdateTask handles the gRPC request to update an existing task.
 func (h *TaskHandler) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest) (*pb.TaskResponse, error) {
 	h.logger.Info("Received UpdateTask request", zap.Int64("id", req.Id))
 
@@ -135,6 +141,7 @@ func (h *TaskHandler) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest)
 	}, nil
 }
 
+// DeleteTask handles the gRPC request to delete a task by its ID.
 func (h *TaskHandler) DeleteTask(ctx context.Context, req *pb.DeleteTaskRequest) (*pb.DeleteTaskResponse, error) {
 	h.logger.Info("Received DeleteTask request", zap.Int64("id", req.Id))
 

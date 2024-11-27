@@ -7,11 +7,13 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// LoggerConfig defines the configuration for the application's logging.
 type LoggerConfig struct {
 	Level       string
 	OutputPaths []string
 }
 
+// AppConfig defines the application's configuration settings.
 type AppConfig struct {
 	DBUser          string
 	DBPassword      string
@@ -26,6 +28,8 @@ type AppConfig struct {
 	EnableProfiling bool
 }
 
+// InitConfig initializes the application configuration by reading environment variables.
+// It attempts to load variables from a .env file if not running in Docker.
 func InitConfig() (*AppConfig, error) {
 	if os.Getenv("ENV_MODE") != "docker" {
 		err := godotenv.Load()
